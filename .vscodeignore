@@ -1,0 +1,9 @@
+**/.git/**
+**/.github/**
+**/.ai/**
+**/.cursor/**
+**/node_modules/**
+src/**
+*.vsix
+eslint.config.cjs
+tsconfig.json

@@ -1,0 +1,15 @@
+# Node
+node_modules/
+dist/
+*.vsix
+
+# OS
+.DS_Store
+
+# Cursor (local)
+.cursor/
+
+# Repo-internal agent artifacts (keep README + .gitkeep)
+.ai/*
+!.ai/README.md
+!.ai/.gitkeep
