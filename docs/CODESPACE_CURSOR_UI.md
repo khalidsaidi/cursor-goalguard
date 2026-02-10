@@ -47,7 +47,7 @@ echo "Cursor UI password: $CURSOR_UI_PASSWORD"
 
 docker rm -f cursor-ui 2>/dev/null || true
 docker run -d --name cursor-ui \
-  -e CURSOR_UI_PASSWORD="$CURSOR_UI_PASSWORD" \
+  -e PASSWORD="$CURSOR_UI_PASSWORD" \
   -p 8080:8080 \
   -p 8443:8443 \
   -v cursor-ui-config:/config \
@@ -59,6 +59,14 @@ docker run -d --name cursor-ui \
 The web UI is protected by basic auth:
 - Username: `abc`
 - Password: `$CURSOR_UI_PASSWORD`
+
+If you forgot the password for the currently-running container:
+
+```bash
+docker inspect cursor-ui --format "{{range .Config.Env}}{{println .}}{{end}}" | grep '^PASSWORD='
+```
+
+If you want to reset it, restart the container with a new `CURSOR_UI_PASSWORD` (see the run command above).
 
 ## 5) Forward Ports and Open in Browser
 
@@ -113,4 +121,3 @@ Then you can trigger command palette actions and verify clipboard content from t
 ```bash
 docker rm -f cursor-ui
 ```
-
