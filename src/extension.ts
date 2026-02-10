@@ -146,6 +146,13 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  // Test-only command: bypass modal prompts to exercise force overwrite behavior in CI.
+  if (isTest) {
+    context.subscriptions.push(
+      vscode.commands.registerCommand("goalguard.__testForceReinstall", async () => enableWorkspace(true))
+    );
+  }
+
   // Auto-prompt to enable on open (1-click UX)
   const maybePromptEnable = async () => {
     const cfg = getConfig();

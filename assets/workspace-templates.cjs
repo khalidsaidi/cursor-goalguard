@@ -33,9 +33,9 @@ const WORKSPACE_TEMPLATES = [
   },
   {
     path: ".ai/goal.md",
-    managed: true,
+    // User/agent-edited memory. Never overwrite on force reinstall.
+    managed: false,
     content: T([
-      MANAGED_HTML_MARKER,
       "# Goal Contract (single source of truth)",
       "",
       "## Objective",
@@ -61,9 +61,9 @@ const WORKSPACE_TEMPLATES = [
   },
   {
     path: ".ai/plan.md",
-    managed: true,
+    // User/agent-edited memory. Never overwrite on force reinstall.
+    managed: false,
     content: T([
-      MANAGED_HTML_MARKER,
       "# Plan (checkpoints)",
       "",
       "Checkpoint 1: ...",
@@ -78,9 +78,9 @@ const WORKSPACE_TEMPLATES = [
   },
   {
     path: ".ai/task-ledger.md",
-    managed: true,
+    // User/agent-edited memory. Never overwrite on force reinstall.
+    managed: false,
     content: T([
-      MANAGED_HTML_MARKER,
       "# Task Ledger",
       "",
       "## Done",
@@ -96,15 +96,16 @@ const WORKSPACE_TEMPLATES = [
   },
   {
     path: ".ai/decisions.md",
-    managed: true,
-    content: T([MANAGED_HTML_MARKER, "# Decisions", "", "- (YYYY-MM-DD) Decision ... because ...", ""])
+    // User/agent-edited memory. Never overwrite on force reinstall.
+    managed: false,
+    content: T(["# Decisions", "", "- (YYYY-MM-DD) Decision ... because ...", ""])
   },
   {
     path: ".ai/state.json",
-    managed: true,
+    // User/agent-edited memory. Never overwrite on force reinstall.
+    managed: false,
     content: T([
       "{",
-      '  "goalguardManaged": true,',
       '  "version": 1,',
       '  "mode": "balanced",',
       '  "reportingCadence": {',
@@ -396,4 +397,3 @@ module.exports = {
   MANAGED_HTML_MARKER,
   WORKSPACE_TEMPLATES
 };
-

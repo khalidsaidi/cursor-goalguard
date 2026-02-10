@@ -2,7 +2,7 @@
   "name": "cursor-goalguard",
   "displayName": "GoalGuard: Two-Layer Agents for Cursor",
   "description": "Two-layer agent harness for Cursor: Supervisor (user-facing) delegates to Worker/Verifier subagents + .ai workspace memory. No API keys.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publisher": "khalidsaidi",
   "license": "MIT",
   "main": "./dist/extension.js",

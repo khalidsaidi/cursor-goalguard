@@ -8,8 +8,31 @@ async function main() {
   const extensionDevelopmentPath = path.resolve(__dirname, "..", "..");
   const extensionTestsPath = path.resolve(__dirname, "./suite/index");
 
+  // Use a multi-root workspace to validate folder iteration behavior.
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "goalguard-vscode-test-"));
-  await fs.writeFile(path.join(tmp, "README.md"), "# VS Code Extension Test Workspace\n", "utf8");
+  const wsA = path.join(tmp, "ws-a");
+  const wsB = path.join(tmp, "ws-b");
+  await fs.mkdir(wsA, { recursive: true });
+  await fs.mkdir(wsB, { recursive: true });
+  await fs.writeFile(path.join(wsA, "README.md"), "# VS Code Extension Test Workspace A\n", "utf8");
+  await fs.writeFile(path.join(wsB, "README.md"), "# VS Code Extension Test Workspace B\n", "utf8");
+
+  const workspaceFile = path.join(tmp, "goalguard.code-workspace");
+  await fs.writeFile(
+    workspaceFile,
+    JSON.stringify(
+      {
+        folders: [{ path: wsA }, { path: wsB }],
+        settings: {
+          // Prevent any user prompts from blocking tests even outside `ExtensionMode.Test`.
+          "goalguard.autoPromptOnOpen": false
+        }
+      },
+      null,
+      2
+    ) + "\n",
+    "utf8"
+  );
 
   // Some minimal Linux environments are missing shared libs required by the VS Code test binary.
   // If the user has extracted libs into `.vscode-test/system-libs`, add it to LD_LIBRARY_PATH.
@@ -35,7 +58,7 @@ async function main() {
     await runTests({
       extensionDevelopmentPath,
       extensionTestsPath,
-      launchArgs: [tmp, "--disable-workspace-trust"],
+      launchArgs: [workspaceFile, "--disable-workspace-trust"],
       // Some environments (notably WSL / remote shells) set ELECTRON_RUN_AS_NODE=1 globally.
       // That breaks launching the VS Code binary for extension tests.
       extensionTestsEnv: {

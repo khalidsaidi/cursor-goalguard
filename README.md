@@ -29,6 +29,13 @@ GoalGuard installs a **Supervisor ↔ Worker** workflow into your Cursor workspa
 
 If prompt injection doesn’t auto-send in your Cursor build, the extension will copy the bootstrap prompt to your clipboard and ask you to paste+enter once.
 
+## Repair / Force Reinstall (Safe)
+Run: `GoalGuard: Force Reinstall Templates (Repair)`
+
+- Overwrites only GoalGuard-managed templates under `.cursor/` (rules/agents/commands/skills).
+- Does **not** overwrite your `.ai/` memory files like `.ai/goal.md`, `.ai/plan.md`, etc.
+- If you want to permanently opt out of overwrites for a `.cursor/` file, remove the `goalguardManaged: true` / `<!-- goalguard:managed -->` marker from it.
+
 ## Headless Workspace Init (No UI)
 If you want to scaffold GoalGuard into a workspace from the terminal:
 
