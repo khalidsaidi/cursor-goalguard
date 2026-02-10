@@ -2,10 +2,13 @@
 **/.github/**
 **/.ai/**
 **/.cursor/**
+**/.tmp/**
 **/node_modules/**
+**/.vscode-test/**
 src/**
 docs/**
 scripts/**
+dist/test/**
 *.vsix
 eslint.config.cjs
 tsconfig.json
