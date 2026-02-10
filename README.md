@@ -29,6 +29,11 @@ GoalGuard installs a **Supervisor ↔ Worker** workflow into your Cursor workspa
 
 If prompt injection doesn’t auto-send in your Cursor build, the extension will copy the bootstrap prompt to your clipboard and ask you to paste+enter once.
 
+If your Cursor build supports subagents, you can explicitly invoke them in chat via:
+- `/goalguard-worker ...`
+- `/goalguard-verifier ...`
+- `/goalguard-repo-searcher ...`
+
 ## Repair / Force Reinstall (Safe)
 Run: `GoalGuard: Force Reinstall Templates (Repair)`
 

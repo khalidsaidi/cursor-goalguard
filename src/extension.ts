@@ -14,11 +14,11 @@ function getConfig() {
   };
 }
 
-function bootstrapPrompt(mode: string): string {
-  const modeNote =
-    mode === "single-chat"
-      ? "IMPORTANT: Use SINGLE-CHAT fallback (do not rely on subagents)."
-      : "Try subagents first; fall back to single-chat if delegation fails.";
+	function bootstrapPrompt(mode: string): string {
+	  const modeNote =
+	    mode === "single-chat"
+	      ? "IMPORTANT: Use SINGLE-CHAT fallback (do not rely on subagents)."
+	      : "Try Cursor subagents first (automatic delegation or explicit /goalguard-worker ...); fall back to single-chat if delegation fails.";
 
   return [
     "You are the GoalGuard SUPERVISOR in a two-layer setup (Supervisor ↔ Worker).",
@@ -34,14 +34,19 @@ function bootstrapPrompt(mode: string): string {
     "If goal.md is placeholder, ask the user for the real goal and update it.",
     "Then write a short plan with checkpoints to .ai/plan.md.",
     "",
-    "If subagents are available, delegate:",
-    "- goalguard-repo-searcher (read-only) for file discovery",
-    "- goalguard-worker for implementation",
-    "- goalguard-verifier (read-only) for drift review",
-    "",
-    "If subagents are NOT available: do this in one chat:",
-    "1) Worker mode: implement ONE small task",
-    "2) Verifier mode: check drift + DoD",
+	    "If subagents are available, use them:",
+	    "- goalguard-repo-searcher (read-only) for file discovery",
+	    "- goalguard-worker for implementation",
+	    "- goalguard-verifier (read-only) for drift review",
+	    "",
+	    "If automatic delegation is not working, ask the user to explicitly invoke subagents via slash commands:",
+	    "- /goalguard-repo-searcher ...",
+	    "- /goalguard-worker ...",
+	    "- /goalguard-verifier ...",
+	    "",
+	    "If subagents are NOT available: do this in one chat:",
+	    "1) Worker mode: implement ONE small task",
+	    "2) Verifier mode: check drift + DoD",
     "3) Post a checkpoint update",
     "",
     "Cadence: max 2 worker rounds + 1 verifier round per checkpoint before updating the user.",

@@ -145,6 +145,11 @@ In some Cursor-in-Codespaces setups, the Agent runtime does not expose any "dele
 SUBAGENTS_UNAVAILABLE
 ```
 
+If your Cursor build supports subagents, you should also be able to explicitly invoke them via slash commands in the chat input, e.g.:
+- `/goalguard-worker ...`
+- `/goalguard-verifier ...`
+- `/goalguard-repo-searcher ...`
+
 If that happens, GoalGuard still works in its **single-chat fallback**: the Supervisor runs an explicit "Worker mode" step, then a "Verifier mode" step, and posts a checkpoint update.
 
 ## Optional: Headless UI Smoke Test (xdotool + xclip)
