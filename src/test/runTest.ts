@@ -54,16 +54,18 @@ async function main() {
     }
   }
 
+  // Some environments set these globally (notably WSL / some CI runners).
+  // Electron treats the mere presence of ELECTRON_RUN_AS_NODE as enabling node-mode on some platforms,
+  // so we must UNSET it (not set it to an empty string).
+  delete process.env.ELECTRON_RUN_AS_NODE;
+  delete process.env.VSCODE_IPC_HOOK_CLI;
+
   try {
     await runTests({
       extensionDevelopmentPath,
       extensionTestsPath,
       launchArgs: [workspaceFile, "--disable-workspace-trust"],
-      // Some environments (notably WSL / remote shells) set ELECTRON_RUN_AS_NODE=1 globally.
-      // That breaks launching the VS Code binary for extension tests.
       extensionTestsEnv: {
-        ELECTRON_RUN_AS_NODE: "",
-        VSCODE_IPC_HOOK_CLI: "",
         ...(extraLdLibraryPath
           ? { LD_LIBRARY_PATH: `${extraLdLibraryPath}${process.env.LD_LIBRARY_PATH ? `:${process.env.LD_LIBRARY_PATH}` : ""}` }
           : {})
