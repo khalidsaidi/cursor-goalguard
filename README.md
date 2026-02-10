@@ -53,5 +53,9 @@ node scripts/goalguard-init.mjs --workspace /path/to/your/project
   - If needed: `cursor agent login` (or `NO_OPEN_BROWSER=1 cursor agent login`)
   - Optional: `GOALGUARD_PROTOCOL_MODEL=composer-1.5 npm run test:protocol`
 
+## Codespaces (Cursor UI)
+If you want to test GoalGuard inside a real Cursor desktop UI running in a GitHub Codespace (streamed via VNC/noVNC), see:
+- `docs/CODESPACE_CURSOR_UI.md`
+
 ## Notes
 - GoalGuard keeps internal artifacts in `.ai/` in the target workspace and app code remains clean.
