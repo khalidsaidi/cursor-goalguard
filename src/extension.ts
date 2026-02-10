@@ -138,7 +138,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("goalguard.doctor", doctor),
     vscode.commands.registerCommand("goalguard.forceReinstall", async () => {
       const ok = await vscode.window.showWarningMessage(
-        "Force reinstall will overwrite GoalGuard-managed files (repairs corrupted templates). Continue?",
+        "Force reinstall will overwrite GoalGuard-managed .cursor templates (rules/agents/commands/skills). It will NOT overwrite your .ai memory files. Continue?",
         { modal: true },
         "Yes"
       );
