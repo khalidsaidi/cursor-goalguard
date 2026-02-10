@@ -4,6 +4,8 @@
 **/.cursor/**
 **/node_modules/**
 src/**
+docs/**
+scripts/**
 *.vsix
 eslint.config.cjs
 tsconfig.json

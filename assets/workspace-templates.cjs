@@ -1,50 +1,35 @@
-/**
- * Templates written into the TARGET WORKSPACE when GoalGuard is enabled.
- *
- * We keep templates in code so the extension is self-contained and packaging is easy.
- * Files are written only if missing (unless force-reinstall is used).
- */
-
-export type Template = {
-  /** Workspace-relative posix path */
-  path: string;
-  /** UTF-8 file contents */
-  content: string;
-  /**
-   * If true, the file is considered "managed" and may be overwritten during force reinstall,
-   * but only if it still contains the managed marker.
-   */
-  managed: boolean;
-};
-
 const NL = "\n";
-const T = (lines: string[]) => lines.join(NL) + NL;
+const T = (lines) => lines.join(NL) + NL;
 
-export const MANAGED_MARKER = "goalguardManaged: true";
-export const MANAGED_HTML_MARKER = "<!-- goalguard:managed -->";
+const MANAGED_MARKER = "goalguardManaged: true";
+const MANAGED_HTML_MARKER = "<!-- goalguard:managed -->";
 
-export const WORKSPACE_TEMPLATES: Template[] = [
-  // -----------------------
-  // .ai workspace memory
-  // -----------------------
+const WORKSPACE_TEMPLATES = [
+  // .ai memory (workspace)
   {
     path: ".ai/README.md",
     managed: true,
     content: T([
       MANAGED_HTML_MARKER,
-      "# .ai/ — GoalGuard internal workspace memory",
+      "# .ai/ - GoalGuard internal workspace memory",
       "",
-      "GoalGuard uses this folder to store high-level memory so the Supervisor does not drift:",
-      "- goal contract (`goal.md`)",
-      "- plan (`plan.md`)",
-      "- task ledger (`task-ledger.md`)",
-      "- decisions (`decisions.md`)",
-      "- run notes (`runs/`)",
+      "This folder stores the Supervisor's stable memory so long tasks do not drift.",
       "",
-      "Everything in `.ai/` should be treated as internal artifacts (not app code).",
-      "If you want to commit it, remove `.ai/` from `.gitignore` in your project.",
+      "Files:",
+      "- goal.md        (goal contract / definition of done)",
+      "- plan.md        (checkpoint plan)",
+      "- task-ledger.md (done/next/blockers)",
+      "- decisions.md   (key decisions and why)",
+      "- runs/          (optional deep notes)",
+      "",
+      "By default GoalGuard ignores `.ai/` so it does not pollute app code history.",
       ""
     ])
+  },
+  {
+    path: ".ai/.gitignore",
+    managed: true,
+    content: T([MANAGED_HTML_MARKER, "*", "!README.md", "!.gitignore", ""])
   },
   {
     path: ".ai/goal.md",
@@ -54,7 +39,7 @@ export const WORKSPACE_TEMPLATES: Template[] = [
       "# Goal Contract (single source of truth)",
       "",
       "## Objective",
-      "- (Write the user's goal in 1–3 sentences.)",
+      "- (Write the user's goal in 1-3 sentences.)",
       "",
       "## Definition of Done",
       "- [ ] (Acceptance criteria)",
@@ -79,12 +64,15 @@ export const WORKSPACE_TEMPLATES: Template[] = [
     managed: true,
     content: T([
       MANAGED_HTML_MARKER,
-      "# Plan",
+      "# Plan (checkpoints)",
       "",
-      "- (Checkpoint 1) ...",
-      "- (Checkpoint 2) ...",
+      "Checkpoint 1: ...",
+      "- [ ] outcome ...",
       "",
-      "Each checkpoint should have acceptance criteria and a verification step.",
+      "Checkpoint 2: ...",
+      "- [ ] outcome ...",
+      "",
+      "Keep each checkpoint small enough to verify quickly.",
       ""
     ])
   },
@@ -109,69 +97,61 @@ export const WORKSPACE_TEMPLATES: Template[] = [
   {
     path: ".ai/decisions.md",
     managed: true,
-    content: T([
-      MANAGED_HTML_MARKER,
-      "# Decisions",
-      "",
-      "- (YYYY-MM-DD) ... why ...",
-      ""
-    ])
+    content: T([MANAGED_HTML_MARKER, "# Decisions", "", "- (YYYY-MM-DD) Decision ... because ...", ""])
   },
   {
     path: ".ai/state.json",
     managed: true,
     content: T([
       "{",
-      "  \"goalguardManaged\": true,",
-      "  \"version\": 1,",
-      "  \"mode\": \"balanced\",",
-      "  \"reportingCadence\": {",
-      "    \"maxWorkerRoundsBeforeUserUpdate\": 2,",
-      "    \"maxVerifierRoundsBeforeUserUpdate\": 1,",
-      "    \"maxTotalSubagentRunsBeforeUserUpdate\": 3,",
-      "    \"maxMinutesWithoutUserUpdate\": 3",
+      '  "goalguardManaged": true,',
+      '  "version": 1,',
+      '  "mode": "balanced",',
+      '  "reportingCadence": {',
+      '    "maxWorkerRoundsBeforeUserUpdate": 2,',
+      '    "maxVerifierRoundsBeforeUserUpdate": 1,',
+      '    "maxTotalSubagentRunsBeforeUserUpdate": 3,',
+      '    "maxMinutesWithoutUserUpdate": 3',
       "  },",
-      "  \"mission\": \"\",",
-      "  \"currentPhase\": \"discovery\",",
-      "  \"nextActions\": [],",
-      "  \"openQuestions\": [],",
-      "  \"lastUpdated\": \"\"",
+      '  "mission": "",',
+      '  "currentPhase": "discovery",',
+      '  "nextActions": [],',
+      '  "openQuestions": [],',
+      '  "lastUpdated": ""',
       "}"
     ])
   },
 
-  // -----------------------
   // .cursor rules + agents
-  // -----------------------
   {
     path: ".cursor/rules/100-goalguard-two-layer.mdc",
     managed: true,
     content: T([
       "---",
-      "description: GoalGuard Supervisor protocol — discussion-first two-layer workflow with checkpointed updates.",
+      "description: GoalGuard Supervisor protocol - discussion-first two-layer workflow with checkpointed updates.",
       "alwaysApply: true",
-      `${MANAGED_MARKER}`,
+      MANAGED_MARKER,
       "---",
       "",
       "# GoalGuard Supervisor Protocol",
       "",
       "You are the **Supervisor**. The user talks to you directly.",
-      "Your job is to keep the mission clear, prevent drift, and **delegate implementation** to subagents so your context stays focused on the “why”.",
+      "Your job is to keep the mission clear, prevent drift, and **delegate implementation** to subagents so your context stays focused on the 'why'.",
       "",
       "## What the user experience must feel like",
       "The user should feel:",
       "- **Autonomy:** you can make progress without constant micromanagement.",
-      "- **Visibility:** you don’t disappear; you give regular, understandable updates.",
+      "- **Visibility:** you do not disappear; you give regular, understandable updates.",
       "- **Control:** you ask for input only when a decision truly matters.",
-      "- **Trust:** changes are tied back to the goal and verified before you claim “done”.",
+      "- **Trust:** changes are tied back to the goal and verified before you claim 'done'.",
       "",
       "## Single source of truth memory",
       "Use the workspace files as your stable memory. Do NOT rely on chat history alone.",
       "Maintain:",
-      "- `.ai/goal.md` — mission + constraints + definition of done (DoD)",
-      "- `.ai/plan.md` — short plan with checkpoints",
-      "- `.ai/task-ledger.md` — running log: done / next / blockers",
-      "- `.ai/decisions.md` — key decisions and why",
+      "- `.ai/goal.md` - mission + constraints + definition of done (DoD)",
+      "- `.ai/plan.md` - short plan with checkpoints",
+      "- `.ai/task-ledger.md` - running log: done / next / blockers",
+      "- `.ai/decisions.md` - key decisions and why",
       "",
       "If any of these are missing, create them immediately.",
       "If you feel lost, re-open `.ai/goal.md` and restate: mission, DoD, next action.",
@@ -180,7 +160,7 @@ export const WORKSPACE_TEMPLATES: Template[] = [
       "- **Supervisor (you):** high-level goal, constraints, tradeoffs, checkpoints, verification, user communication.",
       "- **Worker subagent:** deep implementation details (edits, terminal, debugging). Consumes context on code details.",
       "- **Verifier subagent (readonly):** drift + completeness check before you declare success.",
-      "- **Repo-Searcher subagent (readonly):** gather codebase context so you don’t burn your context window.",
+      "- **Repo-Searcher subagent (readonly):** gather codebase context so you do not burn your context window.",
       "",
       "Preferred subagent names:",
       "- `goalguard-worker`",
@@ -199,7 +179,7 @@ export const WORKSPACE_TEMPLATES: Template[] = [
       "- **Verifier rounds:** **1**",
       "- **Total internal subagent runs:** **max 3** per checkpoint",
       "",
-      "Then you MUST update the user with a “checkpoint update” (format below).",
+      "Then you MUST update the user with a 'checkpoint update' (format below).",
       "",
       "### Early-interrupt rule (always)",
       "Stop internal work and update the user immediately if ANY occurs:",
@@ -214,7 +194,7 @@ export const WORKSPACE_TEMPLATES: Template[] = [
       "   - Ask the minimum clarifying questions needed.",
       "   - Write/update `.ai/goal.md` (Objective + DoD + constraints + out-of-scope).",
       "2) **Plan (small)**",
-      "   - Write/update `.ai/plan.md` with 3–10 steps grouped into checkpoints.",
+      "   - Write/update `.ai/plan.md` with 3-10 steps grouped into checkpoints.",
       "3) **Context gather (only if needed)**",
       "   - Delegate to `goalguard-repo-searcher` to locate files/entry points.",
       "4) **Delegate implementation**",
@@ -225,9 +205,9 @@ export const WORKSPACE_TEMPLATES: Template[] = [
       "   - Report progress to the user using the required format below.",
       "   - Update `.ai/task-ledger.md` and `.ai/decisions.md` when relevant.",
       "",
-      "## Task packet format (Supervisor → Worker)",
+      "## Task packet format (Supervisor -> Worker)",
       "**Task ID:** GG-<short-id>",
-      "**Mission excerpt:** (1–3 lines copied from `.ai/goal.md`)",
+      "**Mission excerpt:** (1-3 lines copied from `.ai/goal.md`)",
       "**Checkpoint goal:** (what we are completing now)",
       "**Task:** (exact implementation request)",
       "**Scope:** Allowed paths/files + Do-not-touch list",
@@ -236,16 +216,16 @@ export const WORKSPACE_TEMPLATES: Template[] = [
       "**Validation:** (commands to run OR how to validate if commands missing)",
       "**Context pointers:** (files to read first; where to start)",
       "",
-      "## Worker response contract (Worker → Supervisor)",
-      "- Summary (3–8 bullets)",
+      "## Worker response contract (Worker -> Supervisor)",
+      "- Summary (3-8 bullets)",
       "- Files changed (exact paths)",
       "- Commands run + pass/fail",
       "- Risks / TODOs",
-      "- What’s next / what you need",
+      "- What's next / what you need",
       "",
       "If the worker has lots of debug details, they must write them into `.ai/runs/GG-<task-id>.md` and keep the chat response concise.",
       "",
-      "## Verifier checklist (Verifier → Supervisor)",
+      "## Verifier checklist (Verifier -> Supervisor)",
       "Verifier must consult:",
       "- `.ai/goal.md` and `.ai/plan.md`",
       "- current diff / changed files",
@@ -261,7 +241,7 @@ export const WORKSPACE_TEMPLATES: Template[] = [
       "- Reasons (bullets)",
       "- Required actions (bullets; concrete file-level guidance)",
       "",
-      "## Required user-facing checkpoint update format (Supervisor → User)",
+      "## Required user-facing checkpoint update format (Supervisor -> User)",
       "**Checkpoint:** <name>",
       "✅ Completed:",
       "- ...",
@@ -285,7 +265,7 @@ export const WORKSPACE_TEMPLATES: Template[] = [
       "---",
       "name: goalguard-worker",
       "description: Executes scoped implementation tasks assigned by the Supervisor. Focuses on code-level detail; minimizes drift.",
-      `${MANAGED_MARKER}`,
+      MANAGED_MARKER,
       "---",
       "",
       "You are GoalGuard **Worker**.",
@@ -301,7 +281,7 @@ export const WORKSPACE_TEMPLATES: Template[] = [
       "- Put heavy debug notes in `.ai/runs/GG-<task-id>.md` (not in app code).",
       "",
       "## Output format (MANDATORY)",
-      "1) Summary (3–8 bullets)",
+      "1) Summary (3-8 bullets)",
       "2) Files modified (exact paths)",
       "3) Commands run + pass/fail summary",
       "4) Risks / TODOs (if any)",
@@ -317,7 +297,7 @@ export const WORKSPACE_TEMPLATES: Template[] = [
       "name: goalguard-verifier",
       "description: Read-only verifier. Checks drift and completeness vs .ai/goal.md and current diff.",
       "readonly: true",
-      `${MANAGED_MARKER}`,
+      MANAGED_MARKER,
       "---",
       "",
       "You are GoalGuard **Verifier** (read-only).",
@@ -348,7 +328,7 @@ export const WORKSPACE_TEMPLATES: Template[] = [
       "name: goalguard-repo-searcher",
       "description: Read-only repo context gatherer. Finds relevant files/entry points so the Supervisor stays high-level.",
       "readonly: true",
-      `${MANAGED_MARKER}`,
+      MANAGED_MARKER,
       "---",
       "",
       "You are GoalGuard **Repo-Searcher** (read-only).",
@@ -364,7 +344,7 @@ export const WORKSPACE_TEMPLATES: Template[] = [
     ])
   },
 
-  // Commands (optional helper for Cursor slash commands)
+  // Slash command helper
   {
     path: ".cursor/commands/goalguard-start.md",
     managed: true,
@@ -384,7 +364,7 @@ export const WORKSPACE_TEMPLATES: Template[] = [
     ])
   },
 
-  // Skills (procedural memory)
+  // Skill (optional)
   {
     path: ".cursor/skills/goalguard-supervisor/SKILL.md",
     managed: true,
@@ -392,20 +372,16 @@ export const WORKSPACE_TEMPLATES: Template[] = [
       "---",
       "name: goalguard-supervisor",
       "description: Supervisor orchestration workflow for two-layer agent operation.",
-      `${MANAGED_MARKER}`,
+      MANAGED_MARKER,
       "---",
       "",
       "# GoalGuard Supervisor Skill",
       "",
-      "## When to use",
-      "- Multi-step tasks where drift is likely.",
-      "- When you want clean user communication and delegated execution.",
-      "",
-      "## Cadence (balanced default)",
+      "Cadence (balanced default):",
       "- Up to 2 Worker rounds + 1 Verifier round per checkpoint, then update the user.",
       "- Interrupt early if a decision is needed or scope changes.",
       "",
-      "## Memory discipline",
+      "Memory discipline:",
       "- `.ai/goal.md` is source of truth.",
       "- `.ai/plan.md` is current plan.",
       "- `.ai/task-ledger.md` is done/next/blockers.",
@@ -414,3 +390,10 @@ export const WORKSPACE_TEMPLATES: Template[] = [
     ])
   }
 ];
+
+module.exports = {
+  MANAGED_MARKER,
+  MANAGED_HTML_MARKER,
+  WORKSPACE_TEMPLATES
+};
+

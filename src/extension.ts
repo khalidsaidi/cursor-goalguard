@@ -1,35 +1,50 @@
 import * as vscode from "vscode";
+import { loadTemplates } from "./templateLoader";
 import { initWorkspaceFolders, isWorkspaceEnabled, doctorWorkspace } from "./workspace";
 import { openAgentAndSendPrompt } from "./chat";
+import type { LoadedTemplates } from "./types";
 
 function getConfig() {
   const cfg = vscode.workspace.getConfiguration("goalguard");
   return {
     autoPromptOnOpen: cfg.get<boolean>("autoPromptOnOpen", true),
     preferDirectPromptCommand: cfg.get<boolean>("preferDirectPromptCommand", true),
-    showStatusBar: cfg.get<boolean>("showStatusBar", true)
+    showStatusBar: cfg.get<boolean>("showStatusBar", true),
+    mode: cfg.get<string>("mode", "auto")
   };
 }
 
-function bootstrapPrompt(): string {
+function bootstrapPrompt(mode: string): string {
+  const modeNote =
+    mode === "single-chat"
+      ? "IMPORTANT: Use SINGLE-CHAT fallback (do not rely on subagents)."
+      : "Try subagents first; fall back to single-chat if delegation fails.";
+
   return [
     "You are the GoalGuard SUPERVISOR in a two-layer setup (Supervisor ↔ Worker).",
     "",
-    "Start by reading these workspace memory files:",
+    modeNote,
+    "",
+    "First read:",
     "- .ai/goal.md",
     "- .ai/state.json",
     "- .ai/plan.md",
+    "- .ai/task-ledger.md",
     "",
     "If goal.md is placeholder, ask the user for the real goal and update it.",
     "Then write a short plan with checkpoints to .ai/plan.md.",
     "",
-    "When implementation is needed, delegate to subagents:",
-    "- goalguard-repo-searcher (read-only) to find relevant files",
-    "- goalguard-worker to implement scoped tasks",
-    "- goalguard-verifier (read-only) to check drift and completeness",
+    "If subagents are available, delegate:",
+    "- goalguard-repo-searcher (read-only) for file discovery",
+    "- goalguard-worker for implementation",
+    "- goalguard-verifier (read-only) for drift review",
     "",
-    "Follow the checkpoint cadence from the always-on rule:",
-    "Max 2 worker rounds + 1 verifier round per checkpoint before updating the user.",
+    "If subagents are NOT available: do this in one chat:",
+    "1) Worker mode: implement ONE small task",
+    "2) Verifier mode: check drift + DoD",
+    "3) Post a checkpoint update",
+    "",
+    "Cadence: max 2 worker rounds + 1 verifier round per checkpoint before updating the user.",
     "",
     "Now ask the user: What are we building today, and what does 'done' look like?"
   ].join("\n");
@@ -42,6 +57,11 @@ function workspaceKey(root: vscode.Uri): string {
 export function activate(context: vscode.ExtensionContext) {
   const output = vscode.window.createOutputChannel("GoalGuard");
   output.appendLine("GoalGuard activated.");
+
+  // Extension host tests should not be blocked by user prompts.
+  const isTest = context.extensionMode === vscode.ExtensionMode.Test;
+
+  const templates: LoadedTemplates = loadTemplates(context);
 
   const statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
   statusBar.text = "$(shield) GoalGuard";
@@ -73,7 +93,7 @@ export function activate(context: vscode.ExtensionContext) {
     }
     output.show(true);
     output.appendLine(`Initializing GoalGuard (force=${force})...`);
-    await initWorkspaceFolders(folders, { force, output });
+    await initWorkspaceFolders(folders, { force, output }, templates);
     vscode.window.showInformationMessage("GoalGuard: Workspace enabled.");
     await updateStatusBar();
   };
@@ -86,7 +106,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (!folders?.length) return;
 
     output.appendLine("Opening Agent chat with Supervisor bootstrap prompt...");
-    await openAgentAndSendPrompt(bootstrapPrompt(), cfg.preferDirectPromptCommand, output);
+    await openAgentAndSendPrompt(bootstrapPrompt(cfg.mode), cfg.preferDirectPromptCommand, output);
   };
 
   const doctor = async () => {
@@ -95,11 +115,18 @@ export function activate(context: vscode.ExtensionContext) {
       vscode.window.showErrorMessage("GoalGuard: No workspace folder open.");
       return;
     }
-    const lines = await doctorWorkspace(folders[0].uri);
-    const doc = lines.join("\n");
+    const report = await doctorWorkspace(folders[0].uri);
     output.show(true);
     output.appendLine("Doctor report:");
-    output.appendLine(doc);
+    for (const c of report.checks) output.appendLine(c);
+    if (report.warnings.length) {
+      output.appendLine("");
+      output.appendLine("Warnings:");
+      for (const w of report.warnings) output.appendLine(w);
+    }
+    output.appendLine("");
+    output.appendLine("Tips:");
+    for (const t of report.tips) output.appendLine(`- ${t}`);
     vscode.window.showInformationMessage("GoalGuard: Doctor report written to Output → GoalGuard.");
     await updateStatusBar();
   };
@@ -111,7 +138,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("goalguard.doctor", doctor),
     vscode.commands.registerCommand("goalguard.forceReinstall", async () => {
       const ok = await vscode.window.showWarningMessage(
-        "Force reinstall will overwrite GoalGuard-managed files. Continue?",
+        "Force reinstall will overwrite GoalGuard-managed files (repairs corrupted templates). Continue?",
         { modal: true },
         "Yes"
       );
@@ -145,6 +172,8 @@ export function activate(context: vscode.ExtensionContext) {
 
     if (choice === "Enable") {
       await enableWorkspace(false);
+      const start = await vscode.window.showInformationMessage("GoalGuard enabled. Start a Supervisor session now?", "Start", "Later");
+      if (start === "Start") await startSupervisor();
     } else if (choice === "Never for this workspace") {
       await context.globalState.update(workspaceKey(root), true);
     }
@@ -155,12 +184,12 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.workspace.onDidChangeWorkspaceFolders(() => {
       void updateStatusBar();
-      void maybePromptEnable();
+      if (!isTest) void maybePromptEnable();
     })
   );
 
   void updateStatusBar();
-  void maybePromptEnable();
+  if (!isTest) void maybePromptEnable();
 }
 
 export function deactivate() {}

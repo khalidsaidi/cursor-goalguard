@@ -4,6 +4,9 @@ const tsPlugin = require("@typescript-eslint/eslint-plugin");
 /** @type {import("eslint").Linter.FlatConfig[]} */
 module.exports = [
   {
+    ignores: ["dist/**", "node_modules/**", ".vscode-test/**"]
+  },
+  {
     files: ["**/*.ts"],
     languageOptions: {
       parser: tsParser,

@@ -83,7 +83,7 @@ export async function openAgentAndSendPrompt(
     // Last resort: keep prompt on clipboard for user.
     await vscode.env.clipboard.writeText(prompt);
     vscode.window.showWarningMessage(
-      "GoalGuard: I opened Agent chat and copied the Supervisor bootstrap prompt to your clipboard. Paste it into the Agent input and press Enter once."
+      "GoalGuard: Agent chat opened. Supervisor prompt copied to clipboard. Paste it into the Agent input and press Enter once, or type /goalguard-start."
     );
   }
 }

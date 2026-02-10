@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { MANAGED_MARKER, MANAGED_HTML_MARKER, WORKSPACE_TEMPLATES, type Template } from "./templates";
+import type { LoadedTemplates, Template } from "./types";
 
 export type InitOptions = {
   force?: boolean;
@@ -28,12 +28,16 @@ async function readText(uri: vscode.Uri): Promise<string> {
   return Buffer.from(buf).toString("utf8");
 }
 
-function isManagedContent(s: string): boolean {
-  return (
-    s.includes(MANAGED_MARKER) ||
-    s.includes(MANAGED_HTML_MARKER) ||
-    /"goalguardManaged"\s*:\s*true/.test(s)
-  );
+function hasYamlFrontmatter(s: string): boolean {
+  return s.trimStart().startsWith("---");
+}
+
+function isAgentFilePath(p: string): boolean {
+  return p.startsWith(".cursor/agents/") && p.endsWith(".md");
+}
+
+function isManagedContent(s: string, t: LoadedTemplates): boolean {
+  return s.includes(t.MANAGED_MARKER) || s.includes(t.MANAGED_HTML_MARKER) || /"goalguardManaged"\s*:\s*true/.test(s);
 }
 
 async function writeFile(uri: vscode.Uri, content: string): Promise<void> {
@@ -42,36 +46,55 @@ async function writeFile(uri: vscode.Uri, content: string): Promise<void> {
 
 async function writeTemplate(
   root: vscode.Uri,
-  t: Template,
-  opts: InitOptions
+  tpl: Template,
+  opts: InitOptions,
+  t: LoadedTemplates
 ): Promise<"created" | "skipped" | "overwritten"> {
-  const uri = vscode.Uri.joinPath(root, ...t.path.split("/"));
-  const parent = vscode.Uri.joinPath(root, ...t.path.split("/").slice(0, -1));
+  const uri = vscode.Uri.joinPath(root, ...tpl.path.split("/"));
+  const parent = vscode.Uri.joinPath(root, ...tpl.path.split("/").slice(0, -1));
   await ensureDir(parent);
 
   const force = Boolean(opts.force);
 
   if (!(await exists(uri))) {
-    await writeFile(uri, t.content);
+    await writeFile(uri, tpl.content);
     return "created";
+  }
+
+  const existing = await readText(uri);
+
+  // Auto-repair: if managed agent file has lost YAML frontmatter, rewrite it.
+  if (
+    !force &&
+    tpl.managed &&
+    isAgentFilePath(tpl.path) &&
+    isManagedContent(existing, t) &&
+    !hasYamlFrontmatter(existing)
+  ) {
+    opts.output?.appendLine(`[repair] restoring YAML frontmatter for: ${tpl.path}`);
+    await writeFile(uri, tpl.content);
+    return "overwritten";
   }
 
   if (!force) return "skipped";
 
-  // Force reinstall: overwrite only if existing file appears managed.
-  const existing = await readText(uri);
-  if (!isManagedContent(existing)) {
-    opts.output?.appendLine(`[skip] not managed (won't overwrite): ${t.path}`);
+  // Force reinstall: overwrite only managed files.
+  if (!tpl.managed) return "skipped";
+
+  // Force reinstall safety: never overwrite user-edited files unless they still look managed.
+  if (!isManagedContent(existing, t)) {
+    opts.output?.appendLine(`[skip] not managed (won't overwrite): ${tpl.path}`);
     return "skipped";
   }
 
-  await writeFile(uri, t.content);
+  await writeFile(uri, tpl.content);
   return "overwritten";
 }
 
 async function patchGitignore(root: vscode.Uri): Promise<void> {
   const gi = vscode.Uri.joinPath(root, ".gitignore");
-  const block = ["", "# GoalGuard (Two-Layer Agent)", ".ai/", ""].join("\n");
+  // NOTE: use `.ai/*` (not `.ai/`) so exceptions can re-include specific files.
+  const block = ["", "# GoalGuard (Two-Layer Agent)", ".ai/*", "!.ai/README.md", "!.ai/.gitignore", ""].join("\n");
 
   if (!(await exists(gi))) {
     await writeFile(gi, block.trimStart());
@@ -79,20 +102,14 @@ async function patchGitignore(root: vscode.Uri): Promise<void> {
   }
 
   const current = await readText(gi);
-  if (
-    current.includes("# GoalGuard (Two-Layer Agent)") ||
-    current.includes("\n.ai/") ||
-    current.includes("\r\n.ai/")
-  ) {
-    return;
-  }
-
+  if (current.includes("# GoalGuard (Two-Layer Agent)")) return;
   await writeFile(gi, current.replace(/\s*$/, "") + block);
 }
 
 export async function initWorkspaceFolders(
   folders: readonly vscode.WorkspaceFolder[],
-  opts: InitOptions
+  opts: InitOptions,
+  t: LoadedTemplates
 ): Promise<void> {
   for (const folder of folders) {
     const root = folder.uri;
@@ -111,10 +128,10 @@ export async function initWorkspaceFolders(
     await ensureDir(vscode.Uri.joinPath(root, ".cursor", "skills", "goalguard-supervisor"));
 
     // Write templates
-    for (const t of WORKSPACE_TEMPLATES) {
-      const res = await writeTemplate(root, t, opts);
-      if (res === "created") opts.output?.appendLine(`[create] ${t.path}`);
-      if (res === "overwritten") opts.output?.appendLine(`[overwrite] ${t.path}`);
+    for (const tpl of t.WORKSPACE_TEMPLATES) {
+      const res = await writeTemplate(root, tpl, opts, t);
+      if (res === "created") opts.output?.appendLine(`[create] ${tpl.path}`);
+      if (res === "overwritten") opts.output?.appendLine(`[write] ${tpl.path}`);
     }
 
     // Patch .gitignore (idempotent)
@@ -125,9 +142,8 @@ export async function initWorkspaceFolders(
     const now = new Date().toISOString();
     const manifestObj = {
       version: 1,
-      installedAt: now,
       updatedAt: now,
-      templates: WORKSPACE_TEMPLATES.map((t) => ({ path: t.path, managed: t.managed }))
+      templates: t.WORKSPACE_TEMPLATES.map((x) => ({ path: x.path, managed: x.managed }))
     };
     await writeFile(manifest, JSON.stringify(manifestObj, null, 2) + "\n");
   }
@@ -138,33 +154,45 @@ export async function isWorkspaceEnabled(root: vscode.Uri): Promise<boolean> {
   return exists(rule);
 }
 
-export async function doctorWorkspace(root: vscode.Uri): Promise<string[]> {
-  const checks: Array<[string, vscode.Uri]> = [
-    [
-      ".cursor/rules/100-goalguard-two-layer.mdc",
-      vscode.Uri.joinPath(root, ".cursor", "rules", "100-goalguard-two-layer.mdc")
-    ],
-    [
-      ".cursor/agents/goalguard-worker.md",
-      vscode.Uri.joinPath(root, ".cursor", "agents", "goalguard-worker.md")
-    ],
-    [
-      ".cursor/agents/goalguard-verifier.md",
-      vscode.Uri.joinPath(root, ".cursor", "agents", "goalguard-verifier.md")
-    ],
-    [
-      ".cursor/agents/goalguard-repo-searcher.md",
-      vscode.Uri.joinPath(root, ".cursor", "agents", "goalguard-repo-searcher.md")
-    ],
+export async function doctorWorkspace(
+  root: vscode.Uri
+): Promise<{ checks: string[]; warnings: string[]; tips: string[] }> {
+  const required: Array<[string, vscode.Uri]> = [
+    [".cursor/rules/100-goalguard-two-layer.mdc", vscode.Uri.joinPath(root, ".cursor", "rules", "100-goalguard-two-layer.mdc")],
+    [".cursor/agents/goalguard-worker.md", vscode.Uri.joinPath(root, ".cursor", "agents", "goalguard-worker.md")],
+    [".cursor/agents/goalguard-verifier.md", vscode.Uri.joinPath(root, ".cursor", "agents", "goalguard-verifier.md")],
+    [".cursor/agents/goalguard-repo-searcher.md", vscode.Uri.joinPath(root, ".cursor", "agents", "goalguard-repo-searcher.md")],
+    [".cursor/commands/goalguard-start.md", vscode.Uri.joinPath(root, ".cursor", "commands", "goalguard-start.md")],
     [".ai/goal.md", vscode.Uri.joinPath(root, ".ai", "goal.md")],
     [".ai/plan.md", vscode.Uri.joinPath(root, ".ai", "plan.md")],
     [".ai/task-ledger.md", vscode.Uri.joinPath(root, ".ai", "task-ledger.md")],
     [".gitignore", vscode.Uri.joinPath(root, ".gitignore")]
   ];
 
-  const out: string[] = [];
-  for (const [label, uri] of checks) {
-    out.push(`${(await exists(uri)) ? "✅" : "❌"} ${label}`);
+  const checks: string[] = [];
+  const warnings: string[] = [];
+  const tips: string[] = [];
+
+  for (const [label, uri] of required) {
+    checks.push(`${(await exists(uri)) ? "✅" : "❌"} ${label}`);
   }
-  return out;
+
+  // YAML frontmatter check on agent files (common corruption case)
+  const agentUris = [
+    vscode.Uri.joinPath(root, ".cursor", "agents", "goalguard-worker.md"),
+    vscode.Uri.joinPath(root, ".cursor", "agents", "goalguard-verifier.md"),
+    vscode.Uri.joinPath(root, ".cursor", "agents", "goalguard-repo-searcher.md")
+  ];
+  for (const u of agentUris) {
+    if (!(await exists(u))) continue;
+    const txt = await readText(u);
+    if (!txt.trimStart().startsWith("---")) {
+      warnings.push(`⚠️ Agent file missing YAML frontmatter: ${u.fsPath}`);
+    }
+  }
+
+  tips.push("If Start Supervisor cannot auto-send, open Agent chat and type /goalguard-start.");
+  tips.push("If subagent delegation fails in your Cursor build, set GoalGuard mode to 'single-chat' and continue (Supervisor runs Worker/Verifier phases itself).");
+
+  return { checks, warnings, tips };
 }

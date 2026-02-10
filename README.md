@@ -18,7 +18,7 @@ GoalGuard installs a **Supervisor ↔ Worker** workflow into your Cursor workspa
 
 ## Install (local)
 1) Build VSIX:
-   - `npm ci`
+   - `npm ci || npm install`
    - `npm run compile`
    - `npm run package`
 2) In Cursor: Extensions → “Install from VSIX…”
@@ -29,9 +29,22 @@ GoalGuard installs a **Supervisor ↔ Worker** workflow into your Cursor workspa
 
 If prompt injection doesn’t auto-send in your Cursor build, the extension will copy the bootstrap prompt to your clipboard and ask you to paste+enter once.
 
+## Headless Workspace Init (No UI)
+If you want to scaffold GoalGuard into a workspace from the terminal:
+
+```bash
+node scripts/goalguard-init.mjs --workspace /path/to/your/project
+```
+
 ## Development
 - `npm run watch`
 - Run extension host in VS Code/ Cursor dev mode as usual.
+
+## Testing
+- `npm test` - VS Code extension host tests (no Cursor required).
+- `npm run test:protocol` - Cursor CLI protocol regression test (requires Cursor CLI + auth; guarded by timeouts).
+  - If needed: `cursor agent login` (or `NO_OPEN_BROWSER=1 cursor agent login`)
+  - Optional: `GOALGUARD_PROTOCOL_MODEL=composer-1.5 npm run test:protocol`
 
 ## Notes
 - GoalGuard keeps internal artifacts in `.ai/` in the target workspace and app code remains clean.
