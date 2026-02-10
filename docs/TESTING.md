@@ -40,3 +40,7 @@ To force a specific model:
 ```bash
 GOALGUARD_PROTOCOL_MODEL=composer-1.5 npm run test:protocol
 ```
+
+## 3) Manual UI tests (Cursor in Codespaces)
+If you want to validate the extension inside a real Cursor desktop UI (not just the VS Code extension host harness), use the Codespaces runbook:
+- `docs/CODESPACE_CURSOR_UI.md`
