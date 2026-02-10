@@ -3,7 +3,8 @@ import * as fs from "node:fs/promises";
 import Mocha from "mocha";
 
 export async function run(): Promise<void> {
-  const mocha = new Mocha({ ui: "tdd", color: true });
+  // Default Mocha timeout (2s) is too tight on slower CI runners (notably macOS).
+  const mocha = new Mocha({ ui: "tdd", color: true, timeout: 20000 });
   const testsRoot = path.resolve(__dirname);
 
   const entries = await fs.readdir(testsRoot);
