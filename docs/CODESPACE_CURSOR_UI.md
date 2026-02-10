@@ -5,6 +5,7 @@ This is a pragmatic way to run the **Cursor desktop UI** inside a GitHub Codespa
 Notes:
 - This uses a **community Docker image** (unofficial). Expect occasional breakage.
 - Codespaces gives you a real Linux VM with Docker, and we stream a Linux desktop via noVNC/KasmVNC.
+- In GitHub Codespaces, `https://auth.cursor.sh` may be unreachable (TCP timeout). If so, Cursor in-app **Sign Up / Log In** can appear to do nothing, and Cloud Agents / subagent delegation may not work. You can still validate GoalGuard scaffolding + slash commands + protocol tests.
 
 ## 1) Create a Codespace
 
@@ -68,6 +69,25 @@ docker inspect cursor-ui --format "{{range .Config.Env}}{{println .}}{{end}}" | 
 
 If you want to reset it, restart the container with a new `CURSOR_UI_PASSWORD` (see the run command above).
 
+## 4.1) If Cursor Says "Update required"
+
+Some `cursor-in-browser` images ship with an old Cursor build and Cursor will block usage with **"Update required"**.
+
+You can update the AppImage inside the container like this:
+
+```bash
+docker exec cursor-ui bash -lc '
+set -e
+cd /
+mv -f Cursor.AppImage "Cursor.AppImage.bak.$(date +%s)" || true
+curl -L -o Cursor.AppImage https://api2.cursor.sh/updates/download/golden/linux-x64/cursor/2.4
+chmod +x Cursor.AppImage
+'
+docker restart cursor-ui
+```
+
+If Cursor still blocks, re-check `https://cursor.com/download` and adjust the `.../cursor/2.4` segment to the latest major/minor.
+
 ## 5) Forward Ports and Open in Browser
 
 In the Codespace UI, open the **Ports** tab and forward:
@@ -81,6 +101,16 @@ Set visibility to **Private** and open in browser.
 To use Agent/chat/subagents, you must sign into Cursor inside the UI.
 
 If the embedded login flow is awkward, Cursor commonly allows "copy a link" login flows. Copy/paste the link into your local browser to finish auth.
+
+If clicking **Log In** does nothing, first check Codespaces connectivity:
+
+```bash
+curl -I --max-time 10 https://auth.cursor.sh || true
+```
+
+If that times out, you likely cannot complete Cursor login from a Codespace. In that case:
+- You can still test **GoalGuard scaffolding** + `/goalguard-start` flow.
+- For strict regression testing, use `npm run test:protocol` (Cursor CLI) instead.
 
 ## 7) Install GoalGuard VSIX in Cursor UI
 
@@ -104,6 +134,18 @@ Open the test project folder: `/workspaces/gg-react-shadcn`.
 2. Run: `GoalGuard: Start Supervisor Session`
    - If your Cursor build doesn't support direct prompt injection, GoalGuard will copy the Supervisor bootstrap prompt to clipboard.
    - Paste into Agent chat and press Enter once (or type `/goalguard-start`).
+
+### Subagents in Codespaces (Reality Check)
+
+GoalGuard scaffolds the subagent definitions under `.cursor/agents/`, but whether Cursor can **delegate** to those subagents is Cursor-build dependent.
+
+In some Cursor-in-Codespaces setups, the Agent runtime does not expose any "delegate/invoke subagent" capability, and a Supervisor prompt will reply with:
+
+```
+SUBAGENTS_UNAVAILABLE
+```
+
+If that happens, GoalGuard still works in its **single-chat fallback**: the Supervisor runs an explicit "Worker mode" step, then a "Verifier mode" step, and posts a checkpoint update.
 
 ## Optional: Headless UI Smoke Test (xdotool + xclip)
 

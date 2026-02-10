@@ -59,3 +59,4 @@ If you want to test GoalGuard inside a real Cursor desktop UI running in a GitHu
 
 ## Notes
 - GoalGuard keeps internal artifacts in `.ai/` in the target workspace and app code remains clean.
+- In GitHub Codespaces, Cursor login can fail if `https://auth.cursor.sh` is unreachable; the Codespaces runbook includes a workaround path and the recommended fallback tests.
