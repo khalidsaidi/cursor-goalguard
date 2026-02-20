@@ -1,0 +1,187 @@
+{
+  "name": "goalguard-works",
+  "targetExtensionId": "khalidsaidi.cursor-goalguard",
+  "steps": [
+    {
+      "type": "assertExtensionInstalled",
+      "name": "goalguard-installed"
+    },
+    {
+      "type": "activateExtension",
+      "name": "goalguard-activate"
+    },
+    {
+      "type": "assertCommandExists",
+      "name": "cmd-enable",
+      "command": "goalguard.enableWorkspace"
+    },
+    {
+      "type": "assertCommandExists",
+      "name": "cmd-start-supervisor",
+      "command": "goalguard.startSupervisor"
+    },
+    {
+      "type": "assertCommandExists",
+      "name": "cmd-doctor",
+      "command": "goalguard.doctor"
+    },
+    {
+      "type": "assertCommandExists",
+      "name": "cmd-force-reinstall",
+      "command": "goalguard.forceReinstall"
+    },
+    {
+      "type": "executeCommand",
+      "name": "enable-workspace",
+      "command": "goalguard.enableWorkspace"
+    },
+    {
+      "type": "assertFileExists",
+      "name": "file-ai-readme",
+      "path": ".ai/README.md"
+    },
+    {
+      "type": "assertFileExists",
+      "name": "file-ai-goal",
+      "path": ".ai/goal.md"
+    },
+    {
+      "type": "assertFileExists",
+      "name": "file-ai-plan",
+      "path": ".ai/plan.md"
+    },
+    {
+      "type": "assertFileExists",
+      "name": "file-ai-task-ledger",
+      "path": ".ai/task-ledger.md"
+    },
+    {
+      "type": "assertFileExists",
+      "name": "file-ai-decisions",
+      "path": ".ai/decisions.md"
+    },
+    {
+      "type": "assertFileExists",
+      "name": "file-ai-state",
+      "path": ".ai/state.json"
+    },
+    {
+      "type": "assertFileExists",
+      "name": "file-ai-manifest",
+      "path": ".ai/.goalguard-manifest.json"
+    },
+    {
+      "type": "assertFileExists",
+      "name": "dir-ai-runs",
+      "path": ".ai/runs"
+    },
+    {
+      "type": "assertFileExists",
+      "name": "dir-ai-scratch",
+      "path": ".ai/scratch"
+    },
+    {
+      "type": "assertFileExists",
+      "name": "dir-ai-work-orders",
+      "path": ".ai/work-orders"
+    },
+    {
+      "type": "assertFileExists",
+      "name": "file-rule",
+      "path": ".cursor/rules/100-goalguard-two-layer.mdc"
+    },
+    {
+      "type": "assertFileExists",
+      "name": "file-agent-worker",
+      "path": ".cursor/agents/goalguard-worker.md"
+    },
+    {
+      "type": "assertFileExists",
+      "name": "file-agent-verifier",
+      "path": ".cursor/agents/goalguard-verifier.md"
+    },
+    {
+      "type": "assertFileExists",
+      "name": "file-agent-searcher",
+      "path": ".cursor/agents/goalguard-repo-searcher.md"
+    },
+    {
+      "type": "assertFileExists",
+      "name": "file-cmd-start",
+      "path": ".cursor/commands/goalguard-start.md"
+    },
+    {
+      "type": "assertFileExists",
+      "name": "file-skill-supervisor",
+      "path": ".cursor/skills/goalguard-supervisor/SKILL.md"
+    },
+    {
+      "type": "assertFileExists",
+      "name": "file-gitignore",
+      "path": ".gitignore"
+    },
+    {
+      "type": "assertFileContains",
+      "name": "content-goal",
+      "path": ".ai/goal.md",
+      "contains": "Goal Contract"
+    },
+    {
+      "type": "assertFileContains",
+      "name": "content-rule-supervisor",
+      "path": ".cursor/rules/100-goalguard-two-layer.mdc",
+      "contains": "Supervisor"
+    },
+    {
+      "type": "assertFileContains",
+      "name": "content-rule-delegate",
+      "path": ".cursor/rules/100-goalguard-two-layer.mdc",
+      "contains": "delegate"
+    },
+    {
+      "type": "assertFileContains",
+      "name": "content-worker",
+      "path": ".cursor/agents/goalguard-worker.md",
+      "contains": "goalguard-worker"
+    },
+    {
+      "type": "assertFileContains",
+      "name": "content-state-managed",
+      "path": ".ai/state.json",
+      "contains": "goalguardManaged"
+    },
+    {
+      "type": "assertFileContains",
+      "name": "content-gitignore-ai",
+      "path": ".gitignore",
+      "contains": ".ai/"
+    },
+    {
+      "type": "executeCommand",
+      "name": "run-doctor",
+      "command": "goalguard.doctor"
+    },
+    {
+      "type": "executeCommand",
+      "name": "run-start-supervisor",
+      "command": "goalguard.startSupervisor",
+      "timeoutMs": 60000
+    },
+    {
+      "type": "sendPromptAndAssertResponseContains",
+      "name": "intent-supervisor-role",
+      "prompt": "What is your role? Reply with exactly one word.",
+      "assertResponseContains": "Supervisor",
+      "openNewChat": false,
+      "waitForResponseMs": 50000
+    },
+    {
+      "type": "sendPromptAndAssertResponseContains",
+      "name": "intent-subagents-known",
+      "prompt": "Which subagents can you delegate to? Reply with their exact names only, comma-separated.",
+      "assertResponseContains": "goalguard-worker",
+      "openNewChat": false,
+      "waitForResponseMs": 50000
+    }
+  ]
+}

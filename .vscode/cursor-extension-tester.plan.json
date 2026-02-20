@@ -1,0 +1,16 @@
+{
+  "name": "full-flow-probe-cli",
+  "targetExtensionId": "local.cursor-extension-tester",
+  "steps": [
+    { "type": "assertExtensionInstalled", "name": "tester-installed" },
+    { "type": "activateExtension", "name": "tester-activate" },
+    {
+      "type": "cursorAgentPrintAndAssertResponseContains",
+      "name": "agent-via-cli-must-respond",
+      "prompt": "Reply with exactly the word OK. Nothing else.",
+      "assertResponseContains": "OK",
+      "procTimeoutMs": 120000,
+      "responseFilePath": ".ai/cursor-extension-tester/response.txt"
+    }
+  ]
+}

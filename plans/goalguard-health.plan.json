@@ -1,0 +1,13 @@
+{
+  "name": "goalguard-health",
+  "targetExtensionId": "khalidsaidi.cursor-goalguard",
+  "steps": [
+    { "type": "assertExtensionInstalled", "name": "goalguard-installed" },
+    { "type": "activateExtension", "name": "goalguard-activate" },
+    { "type": "assertCommandExists", "name": "enable-workspace-cmd", "command": "goalguard.enableWorkspace" },
+    { "type": "assertCommandExists", "name": "start-supervisor-cmd", "command": "goalguard.startSupervisor" },
+    { "type": "assertCommandExists", "name": "doctor-cmd", "command": "goalguard.doctor" },
+    { "type": "assertCommandExists", "name": "force-reinstall-cmd", "command": "goalguard.forceReinstall" },
+    { "type": "executeCommand", "name": "run-doctor", "command": "goalguard.doctor" }
+  ]
+}

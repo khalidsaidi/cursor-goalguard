@@ -53,11 +53,13 @@
     "compile": "tsc -p .",
     "watch": "tsc -w -p .",
     "lint": "eslint .",
-    "test": "npm run compile && node ./dist/test/runTest.js",
-    "test:extension": "npm run test",
+    "test": "npm run compile && npm run verify -- . && node scripts/test-catch-failure.js",
+    "test:extension": "npm run compile && node ./dist/test/runTest.js",
     "test:protocol": "node scripts/test-protocol.mjs",
     "package": "vsce package",
-    "prepublishOnly": "npm run lint && npm run test:extension"
+    "verify": "node scripts/verify-workspace-init.js",
+    "prepublishOnly": "npm run lint && npm run compile",
+    "prove-subagents": "node -e \"require('fs').mkdirSync('.vscode',{recursive:true}); require('fs').copyFileSync('plans/goalguard-works.plan.json','.vscode/cursor-extension-tester.plan.json'); var p=require('path').resolve('.'); console.log('Plan staged. From cursor-extension-tester run:\\nnpm run cli -- run --workspace '+p+' --plan '+p+'/plans/goalguard-works.plan.json --target-vsix '+p+'/cursor-goalguard-0.1.0.vsix --cursor-version 2.4.32');\""
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
